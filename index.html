@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مراجعة الحلقات والمصفوفات</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one centered study column — header, topic filter, progress strip, a single question card styled like an editor pane, then a results sheet. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eef1f6; --ink:#18202b; --muted:#5b6575; --line:#d9dee7;
+  --accent:#3550c8; --accent-ink:#ffffff; --accent-soft:#e6eafb;
+  --ok:#1d7f52; --ok-soft:#e3f3ea; --bad:#b93434; --bad-soft:#f9e6e6;
+  --code-bg:#1d2330; --code-ink:#e7ebf3; --code-kw:#9fb4ff; --code-str:#f2c27b; --code-num:#8fdcb4; --code-var:#f59fb4;
+  --font-body:"IBM Plex Sans Arabic",system-ui,"Segoe UI",Tahoma,sans-serif;
+  --font-code:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11151c; --surface:#181e27; --surface-2:#202835; --ink:#e7ebf1; --muted:#9aa4b5; --line:#2c3545;
+  --accent:#8ea2ff; --accent-ink:#0f1420; --accent-soft:#232c48;
+  --ok:#5fcf98; --ok-soft:#183427; --bad:#ff8a8a; --bad-soft:#3a1d22;
+  --code-bg:#0c1016; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11151c; --surface:#181e27; --surface-2:#202835; --ink:#e7ebf1; --muted:#9aa4b5; --line:#2c3545;
+  --accent:#8ea2ff; --accent-ink:#0f1420; --accent-soft:#232c48;
+  --ok:#5fcf98; --ok-soft:#183427; --bad:#ff8a8a; --bad-soft:#3a1d22;
+  --code-bg:#0c1016; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.7;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-size:.82rem;color:var(--muted);letter-spacing:.02em}
+h1{font-size:clamp(1.5rem,4.5vw,2rem);line-height:1.3;margin:0;text-wrap:balance;font-weight:700}
+.lead{margin:0;color:var(--muted);max-width:60ch}
+.filters{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:.92rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 14px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip:focus-visible,.opt:focus-visible,.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.progress{display:flex;align-items:center;gap:12px;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{flex:1;height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent);width:0;transition:width .3s ease}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.tag{background:var(--accent-soft);color:var(--accent);padding:2px 10px;border-radius:6px;font-weight:500}
+.q{font-size:1.15rem;font-weight:500;margin:0;text-wrap:pretty}
+pre.code{direction:ltr;text-align:left;margin:0;background:var(--code-bg);color:var(--code-ink);font-family:var(--font-code);font-size:.95rem;line-height:1.65;padding:14px 16px;border-radius:10px;overflow-x:auto}
+.kw{color:var(--code-kw)} .str{color:var(--code-str)} .num{color:var(--code-num)} .var{color:var(--code-var)}
+.opts{display:grid;gap:10px}
+.opt{font:inherit;text-align:start;display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;min-width:0}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .key{flex:none;width:28px;height:28px;border-radius:7px;background:var(--surface-2);display:grid;place-items:center;font-size:.85rem;font-weight:700;color:var(--muted)}
+.opt .txt{min-width:0;overflow-wrap:anywhere}
+.opt code,.explain code,.q code{font-family:var(--font-code);direction:ltr;unicode-bidi:isolate;font-size:.93em}
+.opt.ok{border-color:var(--ok);background:var(--ok-soft)} .opt.ok .key{background:var(--ok);color:var(--surface)}
+.opt.bad{border-color:var(--bad);background:var(--bad-soft)} .opt.bad .key{background:var(--bad);color:var(--surface)}
+.opt:disabled{cursor:default}
+.explain{border-radius:10px;padding:12px 14px;font-size:.96rem;display:flex;flex-direction:column;gap:2px}
+.explain.ok{background:var(--ok-soft)} .explain.bad{background:var(--bad-soft)}
+.explain strong{color:var(--ok)} .explain.bad strong{color:var(--bad)}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{font:inherit;font-weight:500;border:none;border-radius:10px;padding:10px 20px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:default}
+.score{display:flex;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums}
+.score b{font-size:3rem;line-height:1;color:var(--accent)}
+.missed{display:flex;flex-direction:column;gap:12px;margin:0;padding:0;list-style:none}
+.missed li{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+.missed .ans{font-size:.92rem;color:var(--ok)}
+footer{font-size:.82rem;color:var(--muted);text-align:center}
+@media (prefers-reduced-motion: reduce){.bar span{transition:none}}
+</style>
+</head>
+<body style="margin:0">
+
+<div class="wrap" dir="rtl" lang="ar">
+  <header>
+    <span class="eyebrow">برمجة الانترنت · برمج 232</span>
+    <h1>مراجعة حلقات التكرار والمصفوفات</h1>
+    <p class="lead">أسئلة تدريبية بنفس نمط الاختبار. اختاري الإجابة، وسيظهر لكِ التصحيح مع الشرح مباشرة.</p>
+  </header>
+
+  <div class="filters" role="group" aria-label="اختيار الموضوع">
+    <button class="chip" id="f-all" data-topic="all" aria-pressed="true">جميع الأسئلة</button>
+    <button class="chip" id="f-loops" data-topic="loops" aria-pressed="false">حلقات التكرار</button>
+    <button class="chip" id="f-arrays" data-topic="arrays" aria-pressed="false">المصفوفات</button>
+  </div>
+
+  <div class="progress" aria-live="polite">
+    <span id="counter">السؤال 1 من 20</span>
+    <div class="bar"><span id="bar"></span></div>
+    <span id="live-score">الصحيحة: 0</span>
+  </div>
+
+  <section class="card" id="quiz"></section>
+  <section class="card" id="result" hidden></section>
+
+  <footer>للتدريب فقط · الدرجة هنا لا تُرصد</footer>
+</div>
+
+<script>
+const BANK = [
+ {t:"loops",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'for ($i = 2; $i <= 4; $i++) {\n    echo $i;\n}',o:["234","1234","2345","23"],a:0,e:"تبدأ الحلقة من 2 وتستمر ما دام $i أصغر من أو يساوي 4، فتطبع 2 ثم 3 ثم 4."},
+ {t:"loops",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'$i = 1;\nwhile ($i <= 3) {\n    echo $i;\n    $i++;\n}',o:["012","123","1234","12"],a:1,e:"يبدأ المتغير من 1 ويزيد بمقدار 1 في كل تكرار، وتتوقف الحلقة بعد 3."},
+ {t:"loops",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'for ($i = 3; $i >= 1; $i--) {\n    echo $i;\n}',o:["123","3210","321","32"],a:2,e:"المعامل $i-- ينقص المتغير بمقدار 1، فتطبع الحلقة 3 ثم 2 ثم 1."},
+ {t:"loops",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'$k = 10;\nwhile ($k > 7) {\n    echo $k;\n    $k--;\n}',o:["10987","1098","987","109"],a:1,e:"الشرط `$k > 7` يعني أن الحلقة تتوقف عندما تصل القيمة إلى 7، فتطبع 10 و9 و8 فقط."},
+ {t:"loops",type:"mc",q:"كم مرة يتكرر تنفيذ الحلقة التالية؟",code:'for ($i = 0; $i < 4; $i++) {\n    echo "PHP";\n}',o:["3 مرات","5 مرات","4 مرات","مرة واحدة"],a:2,e:"قيم $i هي 0 و1 و2 و3، أي أربع قيم، فتتكرر الحلقة 4 مرات."},
+ {t:"loops",type:"mc",q:"في حلقة التكرار، ما الجزء الذي يحدد متى تتوقف الحلقة؟",o:["قيمة البداية","الشرط","الأمر echo","اسم المتغير"],a:1,e:"تستمر الحلقة ما دام الشرط صحيحًا، وتتوقف عندما يصبح الشرط غير محقق."},
+ {t:"loops",type:"mc",q:"ماذا يحدث عند تنفيذ الكود التالي؟",code:'$i = 1;\nwhile ($i <= 3) {\n    echo $i;\n}',o:["يطبع 123","يطبع 1 مرة واحدة","تتكرر الحلقة بلا نهاية","يظهر خطأ في الصيغة"],a:2,e:"لا يوجد $i++ داخل الحلقة، فتبقى قيمة المتغير 1 والشرط صحيح دائمًا، فتتكرر الحلقة بلا نهاية."},
+ {t:"loops",type:"tf",q:"تختبر حلقة do...while الشرط قبل تنفيذ الكود في المرة الأولى.",a:false,e:"حلقة do...while تنفذ الكود مرة واحدة أولًا، ثم تختبر الشرط."},
+ {t:"loops",type:"tf",q:"المعامل $i-- يُنقص قيمة المتغير بمقدار 1.",a:true,e:"المعامل -- للنقصان، والمعامل ++ للزيادة."},
+ {t:"loops",type:"tf",q:"يمكن استخدام حلقة while لطباعة الأرقام من 1 إلى 10.",a:true,e:"يمكن طباعة الأرقام بحلقة while أو for، بشرط تحديد البداية والشرط وزيادة المتغير."},
+ {t:"arrays",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'$fruits = ["apple", "banana", "mango"];\necho $fruits[2];',o:["banana","mango","apple","2"],a:1,e:"ترقيم عناصر المصفوفة يبدأ من 0، فالعنصر رقم 2 هو العنصر الثالث mango."},
+ {t:"arrays",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'$n = [9, 4, 6];\nsort($n);\necho $n[2];',o:["4","6","9","2"],a:2,e:"بعد الترتيب التصاعدي تصبح المصفوفة 4, 6, 9، والعنصر رقم 2 هو 9."},
+ {t:"arrays",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'$n = [9, 4, 6];\nrsort($n);\necho $n[2];',o:["9","6","4","0"],a:2,e:"بعد الترتيب التنازلي تصبح المصفوفة 9, 6, 4، والعنصر رقم 2 هو 4."},
+ {t:"arrays",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'$days = ["Sun", "Mon"];\necho count($days);',o:["1","2","3","Sun Mon"],a:1,e:"الدالة count() ترجع عدد عناصر المصفوفة، وهنا عنصران."},
+ {t:"arrays",type:"mc",q:"أي من الأسطر التالية ينشئ مصفوفة بشكل صحيح؟",o:["$ages = (20, 25, 30);","ages = [20, 25, 30];","$ages = [20, 25, 30];","$ages = {20, 25, 30};"],a:2,code_opts:true,e:"اسم المصفوفة يبدأ بالرمز $، والقيم توضع داخل أقواس مربعة [ ] بينها فواصل."},
+ {t:"arrays",type:"mc",q:"لترتيب المصفوفة $scores من الأكبر إلى الأصغر نكتب:",o:["sort($scores);","rsort($scores);","count($scores);","print_r($scores);"],a:1,code_opts:true,e:"الدالة rsort() ترتب تنازليًا (من الأكبر إلى الأصغر)، والدالة sort() ترتب تصاعديًا."},
+ {t:"arrays",type:"mc",q:"ما هي النتيجة التي سيطبعها الكود التالي؟",code:'$letters = ["a", "b"];\nprint_r($letters);',o:["a b","Array","Array ( [0] => a [1] => b )","[a, b]"],a:2,code_opts:true,e:"الدالة print_r() تطبع المصفوفة كاملة مع رقم كل عنصر (المفتاح) وقيمته."},
+ {t:"arrays",type:"tf",q:"الدالة sort() ترتب عناصر المصفوفة من الأصغر إلى الأكبر.",a:true,e:"sort() للترتيب التصاعدي، وrsort() للترتيب التنازلي."},
+ {t:"arrays",type:"tf",q:"الدالة count() تُرجع مجموع قيم عناصر المصفوفة.",a:false,e:"الدالة count() ترجع عدد العناصر، وليس مجموع قيمها."},
+ {t:"arrays",type:"tf",q:"يمكن إنشاء المصفوفة في PHP باستخدام الدالة array() أو باستخدام الأقواس المربعة [ ].",a:true,e:"الطريقتان صحيحتان وتعطيان النتيجة نفسها، والأقواس المربعة أقصر."},
+ {t:"arrays",type:"tf",q:"العنصر $colors[0] هو آخر عنصر في المصفوفة $colors.",a:false,e:"الرقم 0 يشير إلى العنصر الأول في المصفوفة."}
+];
+
+const KEYS=["أ","ب","ج","د"];
+let topic="all", order=[], idx=0, correct=0, missed=[], answered=false;
+const $=s=>document.querySelector(s);
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function highlight(src){
+  return esc(src)
+    .replace(/(&quot;|")(.*?)(\1)/g,'<span class="str">"$2"</span>')
+    .replace(/\b(for|while|do|echo|print_r|sort|rsort|count|array)\b/g,'<span class="kw">$1</span>')
+    .replace(/(\$[a-zA-Z_]+)/g,'<span class="var">$1</span>')
+    .replace(/(?<![\w$">])(\d+)(?![\w<])/g,'<span class="num">$1</span>');
+}
+const inlineCode=s=>s.split('`').map((part,i)=>i%2?'<code>'+esc(part)+'</code>':inlineCode0(part)).join('');
+const inlineCode0=s=>esc(s).replace(/(\$[a-zA-Z_]+(?:\[\d+\])?(?:--|\+\+)?|\b[a-z_]+\(\)|\[ \]|do\.\.\.while)/g,'<code>$1</code>');
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function start(){
+  order=shuffle(BANK.filter(q=>topic==="all"||q.t===topic).map(q=>{
+    if(q.type==="tf") return {...q,opts:[{text:"صح",ok:q.a===true},{text:"خطأ",ok:q.a===false}]};
+    return {...q,opts:shuffle(q.o.map((t,i)=>({text:t,ok:i===q.a})))};
+  }));
+  idx=0;correct=0;missed=[];
+  $("#result").hidden=true;$("#quiz").hidden=false;render();
+}
+function render(){
+  const q=order[idx];answered=false;
+  $("#counter").textContent=`السؤال ${idx+1} من ${order.length}`;
+  $("#bar").style.width=(idx/order.length*100)+"%";
+  $("#live-score").textContent=`الصحيحة: ${correct}`;
+  const optHtml=q.opts.map((o,i)=>`<button class="opt" id="opt-${i}" data-i="${i}"><span class="key">${q.type==="tf"?(i?"✗":"✓"):KEYS[i]}</span><span class="txt">${q.code_opts?`<code>${esc(o.text)}</code>`:esc(o.text)}</span></button>`).join("");
+  $("#quiz").innerHTML=`
+    <div class="meta"><span class="tag">${q.t==="loops"?"حلقات التكرار":"المصفوفات"}</span><span>${q.type==="tf"?"صح أو خطأ":"اختيار من متعدد"}</span></div>
+    <p class="q">${inlineCode(q.q)}</p>
+    ${q.code?`<pre class="code"><code>${highlight(q.code)}</code></pre>`:""}
+    <div class="opts">${optHtml}</div>
+    <div id="explain" hidden></div>
+    <div class="actions"><button class="btn ghost" id="restart">البدء من جديد</button><button class="btn" id="next" disabled>${idx+1<order.length?"السؤال التالي":"عرض النتيجة"}</button></div>`;
+  document.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>choose(+b.dataset.i)));
+  $("#next").addEventListener("click",next);
+  $("#restart").addEventListener("click",start);
+}
+function choose(i){
+  if(answered)return;answered=true;
+  const q=order[idx],ok=q.opts[i].ok;
+  if(ok)correct++;else missed.push(q);
+  document.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true;if(q.opts[j].ok)b.classList.add("ok");else if(j===i)b.classList.add("bad")});
+  const ex=$("#explain");ex.hidden=false;ex.className="explain "+(ok?"ok":"bad");
+  ex.innerHTML=`<strong>${ok?"إجابة صحيحة":"إجابة غير صحيحة"}</strong><span>${inlineCode(q.e)}</span>`;
+  $("#live-score").textContent=`الصحيحة: ${correct}`;
+  const n=$("#next");n.disabled=false;n.focus();
+}
+function next(){ if(idx+1<order.length){idx++;render()} else finish(); }
+function finish(){
+  $("#bar").style.width="100%";
+  const total=order.length,pct=Math.round(correct/total*100);
+  let best=null;try{const k="best-"+topic;best=+localStorage.getItem(k)||0;if(pct>best)localStorage.setItem(k,pct)}catch(e){}
+  const msg=pct>=90?"ممتاز، أنتِ جاهزة للاختبار.":pct>=70?"جيد جدًا، راجعي الأسئلة التي أخطأتِ فيها.":"راجعي الشرح في الأسئلة التالية ثم أعيدي المحاولة.";
+  $("#quiz").hidden=true;const r=$("#result");r.hidden=false;
+  r.innerHTML=`
+    <div class="score"><b>${correct}</b><span>من ${total} إجابة صحيحة (${pct}%)</span></div>
+    <p class="q" style="font-size:1.05rem">${msg}</p>
+    ${best!==null&&best>0?`<span class="eyebrow">أفضل نتيجة سابقة في هذا القسم: ${Math.max(best,pct)}%</span>`:""}
+    ${missed.length?`<ul class="missed">${missed.map(q=>`<li><span>${inlineCode(q.q)}</span>${q.code?`<pre class="code"><code>${highlight(q.code)}</code></pre>`:""}<span class="ans">الإجابة الصحيحة: ${q.type==="tf"?(q.a?"صح":"خطأ"):(q.code_opts?`<code>${esc(q.o[q.a])}</code>`:esc(q.o[q.a]))}</span><span>${inlineCode(q.e)}</span></li>`).join("")}</ul>`:""}
+    <div class="actions">${missed.length?`<button class="btn ghost" id="retry-missed">إعادة الأسئلة الخاطئة فقط</button>`:"<span></span>"}<button class="btn" id="again">محاولة جديدة</button></div>`;
+  $("#again").addEventListener("click",start);
+  const rm=$("#retry-missed");if(rm)rm.addEventListener("click",()=>{order=shuffle(missed.slice());idx=0;correct=0;missed=[];r.hidden=true;$("#quiz").hidden=false;render()});
+}
+document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+  topic=c.dataset.topic;document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===c));start();
+}));
+document.addEventListener("keydown",e=>{
+  if($("#quiz").hidden)return;
+  const map={"1":0,"2":1,"3":2,"4":3};
+  if(!answered&&e.key in map&&map[e.key]<order[idx].opts.length)choose(map[e.key]);
+  else if(answered&&e.key==="Enter"&&document.activeElement.id!=="next")next();
+});
+start();
+</script>
+
+</body>
+</html>
